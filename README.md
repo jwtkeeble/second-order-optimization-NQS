@@ -15,7 +15,7 @@ and running the `run_qnkfac.py` script as shown below in the [Usage](#usage) sec
 
 The requirements in order to run this script can be found in `requirements.txt` and can be installed via `pip` or `conda`.
 
-Please **note**: this optimiser is only compatible with pytorch 2.1 and above (due to reliance on the `torch.func` namespace for efficiently computing per-sample gradients)
+**Please note**: this optimiser is only compatible with pytorch 2.1 and above (due to reliance on the `torch.func` namespace for efficiently computing per-sample gradients)
 
 ## Usage
 
