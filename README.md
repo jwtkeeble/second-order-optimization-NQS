@@ -1,6 +1,6 @@
 # Second-Order Optimization NQS
 
-This repository contains the associated code for 'Second-order Optimisation strategies for neural network quantum states', henceforth the paper,
+This repository contains the associated code for '[Second-order Optimisation strategies for neural network quantum states]()', henceforth the paper,
 and focuses on second-order based optimisation schemes applied towards neural-network quantum states that can accelerate convergence beyond pre-existing methods.
 
 ## Installation
