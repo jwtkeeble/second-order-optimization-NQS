@@ -25,18 +25,19 @@ from torch.func import vmap #functorch
 torch.manual_seed(238472394)
 torch.set_printoptions(4)
 torch.backends.cudnn.benchmark=True
-
+torch.set_default_dtype(torch.float32)
+"""
 if(args.dtype == 'float32'):
     torch.set_default_dtype(torch.float32)
 elif(args.dtype == 'float64'):
     torch.set_default_dtype(torch.float64)
 else:
     raise NameError(f"Unknown dtype: {args.dtype} selected!")
+"""
 
-#device = torch.device('cpu')
-# device = torch.device('cuda')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-dtype = str(torch.get_default_dtype()).split('.')[-1]
+dtype = torch.get_default_dtype()
+dtype_str = str(torch.get_default_dtype()).split('.')[-1]
 
 import sys
 DIR="./"
@@ -50,7 +51,7 @@ from HartreeFock import HFsolver
 
 from utils import calc_pretraining_loss
 from utils import load_dataframe, load_model, count_parameters, get_groundstate
-from utils import sync_time, clip, update_lr
+from utils import sync_time, clip
 
 
 #args
@@ -62,7 +63,7 @@ func = nn.Tanh()  #activation function between layers
 pretrain = True   #pretraining output shape?
 
 nwalkers=4096
-n_sweeps=10 #n_discard
+n_sweeps=400 #n_discard
 std=1.#0.02#1.
 target_acceptance=0.5
 
@@ -86,7 +87,7 @@ net = vLogHarmonicNet(num_input=nfermions,
                       num_dets=num_dets,
                       func=func,
                       pretrain=pretrain)
-net=net.to(device)
+net=net.to(device=device, dtype=dtype)
 
 sampler = MetropolisHastings(network=net,
                              dof=nfermions,
@@ -121,9 +122,9 @@ else:
 ###############################################################################################################################################
 
 model_path_pt = DIR+"results/pretrain/checkpoints/A%02i_H%03i_L%02i_D%02i_%s_W%04i_P%06i_%s_PT_%s_device_%s_dtype_%s_chkp.pt" % \
-                 (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, optim.__class__.__name__, True, device, dtype)
+                 (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, optim.__class__.__name__, True, device, dtype_str)
 filename_pt = DIR+"results/pretrain/data/A%02i_H%03i_L%02i_D%02i_%s_W%04i_P%06i_%s_PT_%s_device_%s_dtype_%s.csv" % \
-                 (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, optim.__class__.__name__, True, device, dtype)
+                 (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, optim.__class__.__name__, True, device, dtype_str)
 
 net.pretrain = True
 writer_pt = load_dataframe(filename_pt)
@@ -189,9 +190,9 @@ net.pretrain = False
 optim = torch.optim.Adam(params=net.parameters(), lr=1e-4, fused=torch.cuda.is_available()) #new optimizer
 
 model_path = DIR+"results/energy/checkpoints/A%02i_H%03i_L%02i_D%02i_%s_W%04i_P%06i_V%4.2e_S%4.2e_%s_PT_%s_device_%s_dtype_%s_chkp.pt" % \
-                (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, V0, sigma0, optim.__class__.__name__, False, device, dtype)
+                (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, V0, sigma0, optim.__class__.__name__, False, device, dtype_str)
 filename = DIR+"results/energy/data/A%02i_H%03i_L%02i_D%02i_%s_W%04i_P%06i_V%4.2e_S%4.2e_%s_PT_%s_device_%s_dtype_%s.csv" % \
-                (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, V0, sigma0, optim.__class__.__name__, False, device, dtype)
+                (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, V0, sigma0, optim.__class__.__name__, False, device, dtype_str)
 
 writer = load_dataframe(filename)
 output_dict = load_model(model_path=model_path, device=device, net=net, optim=optim, sampler=sampler)
@@ -200,6 +201,8 @@ start=output_dict['start']
 net=output_dict['net']
 optim=output_dict['optim']
 sampler=output_dict['sampler']
+
+print("params dtype: ",next(net.parameters()).dtype)
 
 #Energy Minimisation
 for epoch in range(start, epochs+1):

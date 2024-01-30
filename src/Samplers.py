@@ -10,11 +10,12 @@ from torch import Tensor
 from Models import vLogHarmonicNet
 
 def rw_metropolis_kernel(logpdf: Callable, position: Tensor, log_prob: Tensor, sigma: float):
-    delta_position = sigma * torch.randn(position.shape, device=position.device)
+    delta_position = sigma * torch.randn_like(position)#.shape, device=position.device)
     proposal = position + delta_position
+    #print(position.dtype, delta_position.dtype, proposal.dtype)
     proposal_logprob = logpdf(proposal)
 
-    log_uniform = torch.log(torch.rand(proposal_logprob.shape, device=position.device))
+    log_uniform = torch.log(torch.rand_like(proposal_logprob))#.shape, device=position.device))
     accept = log_uniform < (proposal_logprob - log_prob)
     
     acceptance_rate = accept.float().mean()
@@ -32,11 +33,15 @@ class MetropolisHastings(nn.Module):
         self.nwalkers = nwalkers
         self.target_acceptance = target_acceptance
         self.device = next(self.network.parameters()).device
-        self.sigma = torch.tensor(1.0, device=self.device) #TODO more expressive name for sigma (to avoid confusion with other sigma's)
-        self.acceptance_rate = torch.tensor(0.0, device=self.device)
+        self.dtype = next(self.network.parameters()).dtype
+
+        self.sigma = torch.tensor(1.0, device=self.device, dtype=self.dtype) #TODO more expressive name for sigma (to avoid confusion with other sigma's)
+        self.acceptance_rate = torch.tensor(0.0, device=self.device, dtype=self.dtype)
         self.chain_positions = torch.randn(size=(self.nwalkers, self.dof),
                                   device=self.device,
+                                  dtype=self.dtype,
                                   requires_grad=False)  # isotropic initialisation.
+        #print("chain_positions: ",self.chain_positions.dtype)
         _pretrain = self.network.pretrain
         self.network.pretrain = False
         self.log_prob = self.network(self.chain_positions)[1].mul(2)

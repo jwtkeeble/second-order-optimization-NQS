@@ -6,13 +6,13 @@ from torch.func import vmap
 torch.manual_seed(238472394)
 torch.set_printoptions(4)
 torch.backends.cudnn.benchmark=True
-# torch.set_default_dtype(torch.float32)
-torch.set_default_dtype(torch.float64)
+torch.set_default_dtype(torch.float32)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-dtype = str(torch.get_default_dtype()).split('.')[-1]
+dtype = torch.get_default_dtype()
+dtype_str=str(torch.get_default_dtype()).split('.')[-1]
 print(f"Using device: {device}")
-print(f"Using dtype: {dtype}")
+print(f"Using dtype: {dtype_str}")
 
 
 import sys
@@ -66,7 +66,7 @@ target_acceptance = 0.5
 V0 = args.V0
 sigma0 = args.sigma0
 # Optimizer arguments
-pt_save_every_ith = 1000
+pt_save_every_ith = 10
 em_save_every_ith = 1  # 100
 clip_factor = 5
 
@@ -82,7 +82,7 @@ net = vLogHarmonicNet(num_input=nfermions,
                       num_dets=num_dets,
                       func=func,  # TODO rename func in activation function or sth
                       pretrain=pretrain)
-net = net.to(device)
+net = net.to(device=device,dtype=dtype)
 
 sampler = MetropolisHastings(network=net,
                              dof=nfermions,
@@ -117,11 +117,12 @@ else:
 ###############################################################################################################################################
 
 model_path_pt = DIR+"results/pretrain/checkpoints/A%02i_H%03i_L%02i_D%02i_%s_W%04i_P%06i_%s_PT_%s_device_%s_dtype_%s_chkp.pt" % \
-                 (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, optim.__class__.__name__, True, device, dtype)
+                 (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, optim.__class__.__name__, True, device, dtype_str)
 filename_pt = DIR+"results/pretrain/data/A%02i_H%03i_L%02i_D%02i_%s_W%04i_P%06i_%s_PT_%s_device_%s_dtype_%s.csv" % \
-                 (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, optim.__class__.__name__, True, device, dtype)
+                 (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, optim.__class__.__name__, True, device, dtype_str)
 
 net.pretrain = True
+
 output_dict = load_model(model_path=model_path_pt, device=device, net=net, optim=optim, sampler=sampler)
 writer_pt = load_dataframe(filename_pt)
 
@@ -129,9 +130,6 @@ start = output_dict['start'] # TODO choose a better name for 'start' (~last_epoc
 net = output_dict['net']
 optim = output_dict['optim']
 sampler = output_dict['sampler']
-
-#sampler.sigma = torch.as_tensor(std, device=device)
-#sampler.target_acceptance = None
 
 #Pre-training
 for preepoch in range(start, preepochs+1):  # TODO preepochs naming to make clear it's maximum of preepochs
@@ -235,9 +233,9 @@ optim_name = optim.__class__.__name__ \
             + "-" + args.quadratic_model + '-' + args.precondition_method + "-MR-" + str(args.number_of_minres_it)
 
 model_path = DIR+"results/energy/checkpoints/A%02i_H%03i_L%02i_D%02i_%s_W%04i_P%06i_V%4.2e_S%4.2e_%s_PT_%s_device_%s_dtype_%s_chkp.pt" % \
-                (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, V0, sigma0, optim_name, False, device, dtype)
+                (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, V0, sigma0, optim_name, False, device, dtype_str)
 filename = DIR+"results/energy/data/A%02i_H%03i_L%02i_D%02i_%s_W%04i_P%06i_V%4.2e_S%4.2e_%s_PT_%s_device_%s_dtype_%s.csv" % \
-                (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, V0, sigma0, optim_name, False, device, dtype)
+                (nfermions, num_hidden, num_layers, num_dets, func.__class__.__name__, nwalkers, preepochs, V0, sigma0, optim_name, False, device, dtype_str)
 
 writer = load_dataframe(filename)
 output_dict = load_model(model_path=model_path, device=device, net=net, optim=optim, sampler=sampler)
@@ -247,6 +245,8 @@ start = output_dict['start']
 net = output_dict['net']
 optim = output_dict['optim']
 sampler = output_dict['sampler']
+
+print("params dtype: ",next(net.parameters()).dtype)
 
 for epoch in range(start, epochs+1):
     stats = {}

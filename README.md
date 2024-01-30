@@ -1,7 +1,7 @@
 # Second-Order Optimization NQS
 
-This repository contains the associated code for '[Second-order Optimisation strategies for neural network quantum states]()', henceforth the paper,
-and focuses on second-order based optimisation schemes applied towards neural-network quantum states that can accelerate convergence beyond pre-existing methods.
+This repository contains the associated code for '[Second-order Optimisation strategies for neural network quantum states]()', and focuses on second-order based optimisation schemes applied towards neural-network quantum states. 
+These novel second-order optimisation schemes can achieve accelerate convergence beyond pre-existing methods and highlights key limitations of existing methods.
 
 ## Installation
 
@@ -59,6 +59,9 @@ The results of this simulation are stored within the `results/` directory for bo
 The convergence data is stored as a `.csv` file, which can be easily manipulated by the `Pandas` library for data analysis and visualisation. 
 
 The variational state is stored as a `.pt` file, following PyTorch convention, and stores the final NQS state as well as its MCMC sampler state.
+
+**NOTE**: The current state of the optimiser only supports NQSs that are comprised of `nn.Linear` objects and will silently skip over other layer types.
+However, one can extend the optimiser to support other layer types by extending the `_merge_for_group` and `_split_for_group` methods, which merge/split all parameters of an `nn.Module` into a single Tensor, respectively, and define how to regularise the Kronecker factors (including the `pi` constant) in the `_regularise_all_kronecker_factors` method.
 
 ## License 
 

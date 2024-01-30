@@ -131,7 +131,6 @@ class QNKFAC(Optimizer):
             return grad2_logabs.diagonal(0,-2,-1).sum() + grad_logabs.pow(2).sum()
         
         self.kinetic_from_log_fn = lambda params, x: -0.5 * laplacian_psi(params, x)
-        # self.grad_position_from_log_fn = lambda params, x: -0.5 * laplacian_psi(params, x)
         self.calc_logabs = calc_logabs
         if (gamma_init is None):
             gamma_init = (damping + l2_reg)**(0.5)
