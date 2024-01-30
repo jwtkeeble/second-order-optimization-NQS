@@ -1,0 +1,6 @@
+*.csv
+*.pt
+*.npz
+*.pyc
+*.DS_Store
+.vscode
