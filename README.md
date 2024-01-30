@@ -36,6 +36,16 @@ The arguments for the `run_qnkfac.py` script are as follows:
 | `-MR`/`--number_of_minres_it` | `int`   | Number of MinRes iteration                              |
 
 
+One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers via the `run_qnkfac.py` script below with the corresponding flags
+
+| Optimsier  | QM            | PM     | MR |
+|------------|---------------|--------|----|
+| KFAC       | Fisher        | KFAC   | 0  |
+| QN-KFAC    | Quasi-Hessian | KFAC   | 0  |
+| QN-MR-KFAC | Quasi-Hessian | KFAC   | >0 |
+| NGD        | Fisher        | Fisher | 0  |
+| DGD        | VMC           | VMC    | >0 |
+
 ```bash
 
 python run_qnkfac.py -N 2 -V -20 -S 0.5 -QM VMC -PM VMC -MR 50
