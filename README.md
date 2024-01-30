@@ -21,19 +21,19 @@ The requirements in order to run this script can be found in `requirements.txt` 
 
 The arguments for the `run_qnkfac.py` script are as follows:
 
-| Argument                      | Type    | Description                                             |
-|-------------------------------|---------|---------------------------------------------------------|
-| `-N`/`--num_fermions`         | `int`   | Number of fermions in physical system                   |
-| `-H`/`--num_hidden`           | `int`   | Number of hidden neurons per layer                      |
-| `-L`/`--num_layers`           | `int`   | Number of layers within the network                     |
-| `-D`/`--num_dets`             | `int`   | Number of determinants within the network's final layer |
-| `-V`/`--V0`                   | `float` | Interaction strength (in harmonic units)                |
-| `-S`/`--sigma0`               | `float` | Interaction distance (in harmonic units)                |
-| `--preepochs`                 | `int`   | Number of pre-epochs for the pretraining phase          |
-| `--epochs`                    | `int`   | Number of epochs for the energy minimisation phase      |
-| `-QM`/`--quadratic_model`     | `str`   | Type of Quadratic Model                                 |
-| `-PM`/`--precondition_method` | `str`   | Type of Preconditioning                                 |
-| `-MR`/`--number_of_minres_it` | `int`   | Number of MinRes iteration                              |
+| Argument                      | Type    | Description                                               |
+|-------------------------------|---------|-----------------------------------------------------------|
+| `-N`/`--num_fermions`         | `int`   | Number of fermions in physical system                     |
+| `-H`/`--num_hidden`           | `int`   | Number of hidden neurons per layer                        |
+| `-L`/`--num_layers`           | `int`   | Number of layers within the network                       |
+| `-D`/`--num_dets`             | `int`   | Number of determinants within the network's final layer   |
+| `-V`/`--V0`                   | `float` | Interaction strength (in harmonic units)                  |
+| `-S`/`--sigma0`               | `float` | Interaction distance (in harmonic units)                  |
+| `--preepochs`                 | `int`   | Number of pre-epochs for the pretraining phase            |
+| `--epochs`                    | `int`   | Number of epochs for the energy minimisation phase        |
+| `-QM`/`--quadratic_model`     | `str`   | Type of Quadratic Model ['Fisher', 'QuasiHessian', 'VMC'] |
+| `-PM`/`--precondition_method` | `str`   | Type of Preconditioning ['KFAC', 'Fisher', 'VMC']         |
+| `-MR`/`--number_of_minres_it` | `int`   | Number of MinRes iteration                                |
 
 
 One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers of the paper via the `run_qnkfac.py` script with the corresponding flags of the table below.
@@ -62,4 +62,4 @@ The variational state is stored as a `.pt` file, following PyTorch convention, a
 
 ## License 
 
-The license of this repositry is [Apache Licensse 2.0](https://choosealicense.com/licenses/apache-2.0/).
+The license of this repositry is [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/).
