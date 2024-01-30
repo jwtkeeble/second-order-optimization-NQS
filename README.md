@@ -21,7 +21,6 @@ Please **note**: this optimiser is only compatible with pytorch 2.1 and above (d
 
 The arguments for the `run_qnkfac.py` script are as follows:
 
-|-------------------------------|---------|---------------------------------------------------------|
 | Argument                      | Type    | Description                                             |
 |-------------------------------|---------|---------------------------------------------------------|
 | `-N`/`--num_fermions`         | `int`   | Number of fermions in physical system                   |
