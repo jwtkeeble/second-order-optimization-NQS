@@ -1,7 +1,10 @@
 # Second-Order Optimization NQS
 
-This repository contains the associated code for '[Second-order Optimisation strategies for neural network quantum states]()', and focuses on second-order based optimisation schemes applied towards neural-network quantum states. 
-These novel second-order optimisation schemes can achieve accelerate convergence beyond pre-existing methods and highlights key limitations of existing methods.
+This repository contains the associated code for '[Second-order Optimisation strategies for neural network quantum states]()', and focuses on second-order based optimisation schemes applied towards neural-network quantum states (NQS) for Variational Monte Carlo (VMC) calculations.
+
+This work focuses on expanding upon our previous work of `[Machine learning one-dimensional spinless trapped fermionic systems with neural-network quantum states](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.108.063320)` by focusing on novel second-order optimisation schemes for NQS, rather than modifying the NQS itself.
+
+These novel second-order optimisation schemes can achieve accelerated rates of convergence beyond standard second-order methods, and highlight key limitations of existing methods that can be solved by developing novel optimisation schemes.
 
 ## Installation
 
