@@ -36,7 +36,7 @@ The arguments for the `run_qnkfac.py` script are as follows:
 | `-MR`/`--number_of_minres_it` | `int`   | Number of MinRes iteration                              |
 
 
-One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers via the `run_qnkfac.py` script below with the corresponding flags
+One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers of the paper via the `run_qnkfac.py` script with the corresponding flags of the table below.
 
 | Optimsier  | QM            | PM     | MR |
 |------------|---------------|--------|----|
@@ -46,11 +46,15 @@ One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers via the `run_
 | NGD        | Fisher        | Fisher | 0  |
 | DGD        | VMC           | VMC    | >0 |
 
+The script can be simply ran by the following command for `DGD` optimiser.
+
 ```bash
 
 python run_qnkfac.py -N 2 -V -20 -S 0.5 -QM VMC -PM VMC -MR 50
 
 ```
+
+The results of this simulation are stored within the `results/` directory for both pretraining (`results/pretrain/`) and the energy minimisation (`results/energy/`). Within each of these directories there exists a `data/` and `checkpoints/`, which stores the convergence data and the final variational state (as well as sampler state) respectively.
 
 ## License 
 
