@@ -46,7 +46,7 @@ One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers of the paper 
 | NGD        | Fisher        | Fisher | 0   |
 | DGD        | VMC           | VMC    | >0  |
 
-The script can be simply ran by the following command for `DGD` optimiser.
+For example, running the DGD MR=50 optimiser can be ran via the following command,
 
 ```bash
 
@@ -57,6 +57,7 @@ python run_qnkfac.py -N 2 -V -20 -S 0.5 -QM VMC -PM VMC -MR 50
 The results of this simulation are stored within the `results/` directory for both pretraining (`results/pretrain/`) and the energy minimisation (`results/energy/`). Within each of these directories there exists a `data/` and `checkpoints/`, which stores the convergence data and the final variational state (as well as sampler state) respectively. 
 
 The convergence data is stored as a `.csv` file, which can be easily manipulated by the `Pandas` library for data analysis and visualisation. 
+
 The variational state is stored as a `.pt` file, following PyTorch convention, and stores the final NQS state as well as its MCMC sampler state.
 
 ## License 
