@@ -5,7 +5,7 @@ These novel second-order optimisation schemes can achieve accelerate convergence
 
 ## Installation
 
-You can reproduce the results of the paper by cloning the repositry with,
+You can reproduce the results of the paper by cloning the repository with,
 
 `git clone https://github.com/jwtkeeble/second-order-optimization-NQS.git`
 
@@ -42,9 +42,9 @@ One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers of the paper 
 |------------|---------------|--------|-----|
 | KFAC       | Fisher        | KFAC   | 0   |
 | QN-KFAC    | Quasi-Hessian | KFAC   | 0   |
-| QN-MR-KFAC | Quasi-Hessian | KFAC   | >0  |
+| QN-MR-KFAC | Quasi-Hessian | KFAC   | > 0 |
 | NGD        | Fisher        | Fisher | 0   |
-| DGD        | VMC           | VMC    | >0  |
+| DGD        | VMC           | VMC    | > 0 |
 
 For example, running the DGD MR=50 optimiser can be ran via the following command,
 
