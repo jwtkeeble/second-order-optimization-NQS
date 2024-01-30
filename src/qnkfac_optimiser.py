@@ -1,18 +1,17 @@
 import torch
 from torch import nn, Tensor
-from torch.optim.optimizer import Optimizer, required, _use_grad_for_differentiable
+from torch.optim.optimizer import Optimizer
 from torch.func import vmap, grad, jacrev
 
 from typing import List, Optional, Callable, Tuple
-from utils import count_parameters, eyes_like, kron
+from utils import count_parameters, eyes_like
 from copy import deepcopy
 import math
-from math import sqrt
 
 # Minres addition
 from scipy.sparse.linalg import LinearOperator
 import numpy as np
-from scipy.sparse.linalg import lsqr, lsmr, lgmres, gmres, minres, gcrotmk, cg, bicg, bicgstab
+from scipy.sparse.linalg import minres
 #
 
 class QNKFAC(Optimizer):
@@ -278,14 +277,6 @@ class QNKFAC(Optimizer):
     #                      RESHAPE PER-SAMPLE GRADIENTS FROM VMAP TO DICT (WITH GROUP AS KEY) AND CACHE                       #
     #=========================================================================================================================#
 
-    # def _update_per_sample_gradients_cache(self, params, x) -> None:
-    #     logpsi_grad = vmap(grad(self.calc_logabs, argnums=(0), has_aux=False), in_dims=(None, 0))(params, x)
-    #     self.per_sample_logpsi_grads = self._reshape_vmap_params_to_dict(param_dict=logpsi_grad)  # auto-converts dict to list
-    #     if(self.param_groups[0]['quadratic_model'] in self._accepted_quadratic_models):
-    #         elocal_grad = vmap(grad(self.kinetic_from_log_fn, argnums=(0), has_aux=False), in_dims=(None, 0))(params, x)
-    #         self.per_sample_elocal_grads = self._reshape_vmap_params_to_dict(param_dict=elocal_grad)  # auto-converts dict to list
-
-
     def _update_per_sample_gradients_cache(self, params, x) -> None:
         if(self.param_groups[0]['quadratic_model'] == 'VMC' and self.param_groups[0]['precondition_method'] in ['KFAC', 'NKP-FM', 'Fisher', 'VMC']):
             logpsi_grad = vmap(grad(self.calc_logabs, argnums=(0), has_aux=False), in_dims=(None, 0), chunk_size=self.chunk_size)(params, x)
@@ -339,23 +330,10 @@ class QNKFAC(Optimizer):
             new_block_diagonal.append(block_diagonal[i*Hout:(i+1)*Hout, j*Hout:(j+1)*Hout].transpose(-2,-1).reshape(-1)) #vec
         new_block_diagonal = torch.stack(new_block_diagonal, dim=0)
         # SVD on permuted matrix
-        #new_block_diagonal = new_block_diagonal.to(dtype=torch.float64)
         Ur, Sr, Vr = torch.svd_lowrank(new_block_diagonal, q=1, niter=100) # TODO: check that it is properly converged + that the singular values are ordered properly
-        #new_block_diagonal = new_block_diagonal.to(dtype=torch.float32)
-        """
-        for x in [2,4,6,8,10]:
-            print("iterations: ",x)
-            u, s, r=torch.svd_lowrank(new_block_diagonal, q=1, niter=x) # TODO: does this return V^T or V
-            print(r)
-        """
         E_left_KF = (torch.sqrt(Sr)*Ur).reshape(Hin, Hin).t().contiguous()  # TODO: should be transpose(-2,-1) to be working batches ?
         E_right_KF = (torch.sqrt(Sr)*Vr).reshape(Hout, Hout).t().contiguous() # TODO: should we transpose Vr first?
-        """
-        E_left_KF = E_left_KF @ E_left_KF.transpose(-2,-1)
-        E_right_KF = E_right_KF @ E_right_KF.transpose(-2,-1)
-        E_left_KF.diagonal().add_(1e-8)
-        E_right_KF.diagonal().add_(1e-8)
-        """         
+        
         return E_left_KF, E_right_KF
 
     def _close_psd_kronecker_product(self, block_diagonal, Hout, Hin):
@@ -390,7 +368,7 @@ class QNKFAC(Optimizer):
                 module = group['module']
                 elocal_grad = self._merge_for_group(module=module, input=self.per_sample_elocal_grads[module])
                 logpsi_grad = self._merge_for_group(module=module, input=self.per_sample_logpsi_grads[module])
-                elocal_grad = elocal_grad - elocal_grad.mean(dim=0)  # exp. moving average here?
+                elocal_grad = elocal_grad - elocal_grad.mean(dim=0)  
                 logpsi_grad = logpsi_grad - logpsi_grad.mean(dim=0)
                 assert elocal_grad.shape == logpsi_grad.shape
                 batch, Hout, Hin = elocal_grad.shape
@@ -409,12 +387,11 @@ class QNKFAC(Optimizer):
                 module = group['module']
                 elocal_grad = self._merge_for_group(module=module, input=self.per_sample_elocal_grads[module])
                 logpsi_grad = self._merge_for_group(module=module, input=self.per_sample_logpsi_grads[module])
-                elocal_grad = elocal_grad - elocal_grad.mean(dim=0)  # exp. moving average here?
+                elocal_grad = elocal_grad - elocal_grad.mean(dim=0) 
                 logpsi_grad = logpsi_grad - logpsi_grad.mean(dim=0)
                 elocal_centred = elocal - energy_mean
                 assert elocal_grad.shape == logpsi_grad.shape
                 batch, Hout, Hin = elocal_grad.shape
-                # energy_weighted_logpsi_grad = torch.einsum("b,bi->bi", elocal_centred, logpsi_grad.reshape(batch, -1))
                 block_diagonal_1 = 4. * torch.einsum("b,bi,bj->ij", elocal_centred, logpsi_grad.transpose(-2,-1).reshape(batch, -1), logpsi_grad.transpose(-2,-1).reshape(batch, -1)) / batch
                 block_diagonal_2 = 2. * torch.einsum("bi,bj->ij", elocal_grad.transpose(-2,-1).reshape(batch, -1), logpsi_grad.transpose(-2,-1).reshape(batch, -1)) / batch
                 block_diagonal = block_diagonal_1 + block_diagonal_2
@@ -432,9 +409,9 @@ class QNKFAC(Optimizer):
                 module = group['module']
 
                 logpsi_grad = self._merge_for_group(module=module, input=self.per_sample_logpsi_grads[module])
-                logpsi_grad = logpsi_grad - logpsi_grad.mean(dim=0)  # exp moving average?
+                logpsi_grad = logpsi_grad - logpsi_grad.mean(dim=0) 
 
-                batch, Hout, Hin = logpsi_grad.shape  # TODO: check flatten(start_dim) vs reshape(batch, -1)
+                batch, Hout, Hin = logpsi_grad.shape 
                 block_diagonal = 4. * torch.einsum("bi,bj->ij", logpsi_grad.transpose(-2,-1).reshape(batch, -1), logpsi_grad.transpose(-2,-1).reshape(batch, -1)) / batch
                 left_factor, right_factor = self._nearest_kronecker_product(block_diagonal=block_diagonal, Hout=Hout, Hin=Hin)
                 if(self.param_groups[0]['step'] == 0):
@@ -461,16 +438,8 @@ class QNKFAC(Optimizer):
                     self.state[module]['right_factor'] = self.param_groups[0]['epsilon'] * self.state[module]['right_factor'] + (1 - self.param_groups[0]['epsilon']) * right_factor
         elif (mode=='Fisher'):
             pass
-            # for group in self.param_groups:
-            #     module = group['module']
-            #     self.state[module]['left_factor'] = None
-            #     self.state[module]['right_factor'] = None
         elif (mode=='VMC'):
             pass
-            # for group in self.param_groups:
-            #     module = group['module']
-            #     self.state[module]['left_factor'] = None
-            #     self.state[module]['right_factor'] = None 
         else:
             raise NameError(f"Unknown mode: {mode} chosen")
 
@@ -487,32 +456,26 @@ class QNKFAC(Optimizer):
                     diag_eet = eyes_like(self.state[module]['eet']) * (gamma / group['pi'])
                 else:
                     raise NameError(f"Unexpected module name found: {module_name} in _regularise_all_kronecker_factors method")
-                self.state[module]['aat_reg'] = self.state[module]['aat'] + diag_aat #can't in-place op as it'll accumulate across gamma values?
+                self.state[module]['aat_reg'] = self.state[module]['aat'] + diag_aat 
                 self.state[module]['eet_reg'] = self.state[module]['eet'] + diag_eet
         else:
             pass
     
     def correct_Delta(self, module, target, initial_guess, number_of_iterations):
         if self.param_groups[0]['quadratic_model'] == 'VMC' or (self.param_groups[0]['precondition_method'] == 'VMC' and self.param_groups[0]['quadratic_model'] == 'QuasiHessian'):
-            # ==============================
             # VMC metric block-diagonal calc
-            # ==============================
             grad_logpsi_params1_xi = self._merge_for_group(module, self.per_sample_logpsi_grad_params_x[module]) #shape [batch_size, num_particles, Hout, Hin]
             batch, num_particles, Hout, Hin = grad_logpsi_params1_xi.shape
             grad_logpsi_params1_xi = grad_logpsi_params1_xi.transpose(-2,-1).reshape(batch, num_particles, -1) #shape: [batch_size, num_particles, Hout*Hin]
             block_diagonal = torch.einsum("bin,bim->nm", grad_logpsi_params1_xi, grad_logpsi_params1_xi) / batch
         elif self.param_groups[0]['quadratic_model'] in ['Fisher', 'QuasiHessian']:
-            # ==============================
             # Fisher matrix block-diagonal calc
-            # ==============================
             logpsi_grad = self._merge_for_group(module=module, input=self.per_sample_logpsi_grads[module])
             logpsi_grad = logpsi_grad - logpsi_grad.mean(dim=0)  # exp moving average?
             batch, Hout, Hin = logpsi_grad.shape
             block_diagonal = 4. * torch.einsum("bi,bj->ij", logpsi_grad.transpose(-2,-1).reshape(batch, -1), logpsi_grad.transpose(-2,-1).reshape(batch, -1)) / batch
         else:
-            # ==============================
             # OLD-GT matrix calc (more like QN actually) + TODO: maybe should just remove it?
-            # ==============================
             elocal_grad = self._merge_for_group(module=module, input=self.per_sample_elocal_grads[module])
             logpsi_grad = self._merge_for_group(module=module, input=self.per_sample_logpsi_grads[module])
             elocal_grad = elocal_grad - elocal_grad.mean(dim=0)  # exp. moving average here?
@@ -531,15 +494,12 @@ class QNKFAC(Optimizer):
         preconditioner.add_(kappa_reg * identity_reg) # Summed in two steps to avoid underflow to 0 (leading to inf when inverted)
         preconditioner.pow_(-zeta_reg)
         # ==============================
-        # Maybe implement faster matrix-vector multiplication function (usual trick taking advantage of E[v1.v2T]) ? (Shouldn't change too much except if #param > #samples)
-        dtype = str(torch.get_default_dtype()).split('.')[-1] #self.dtype # TODO must be string
+        dtype = str(torch.get_default_dtype()).split('.')[-1]
         n = Hout * Hin 
         y_target = target.transpose(-2,-1).reshape(-1).detach().cpu().numpy()
         x_init = initial_guess.transpose(-2,-1).reshape(-1).detach().cpu().numpy()
         sparse_linear_operator = LinearOperator(shape=(n, n),
                                                 dtype= dtype,
-                                                #matvec=(lambda x:(block_diagonal.cpu() @ torch.from_numpy(x)).cpu().detach().numpy()),
-                                                #rmatvec=(lambda x:(block_diagonal.transpose(-2,-1).cpu() @ torch.from_numpy(x)).cpu().detach().numpy()))
                                                 matvec=(lambda x: (block_diagonal @ torch.as_tensor(x, device=self.device, dtype=self.dtype)).cpu().detach().numpy()),
                                                 rmatvec=(lambda x: (block_diagonal.transpose(-2,-1) @ torch.as_tensor(x, device=self.device, dtype=self.dtype)).cpu().detach().numpy()))
         sparse_preconditioner = LinearOperator(shape=(n, n),
@@ -547,13 +507,6 @@ class QNKFAC(Optimizer):
                                                 matvec=(lambda x: (preconditioner * torch.as_tensor(x, device=self.device, dtype=self.dtype)).cpu().detach().numpy()),
                                                 rmatvec=(lambda x: (preconditioner * torch.as_tensor(x, device=self.device, dtype=self.dtype)).cpu().detach().numpy()))
         corrected_Delta = minres(A=sparse_linear_operator, b=y_target, x0=x_init, shift=-self.param_groups[0]['damping'], M=sparse_preconditioner, maxiter=number_of_iterations, tol=1e-8)[0]
-        # corrected_Delta = minres(A=sparse_linear_operator, b=y_target, x0=x_init, shift=-1e-1, M=sparse_preconditioner, maxiter=number_of_iterations, tol=1e-8)[0]
-        # corrected_Delta = minres(A=sparse_linear_operator, b=y_target, x0=x_init, M=sparse_preconditioner, maxiter=number_of_iterations, tol=1e-8)[0]
-        # corrected_Delta = minres(A=sparse_linear_operator, b=y_target, x0=x_init, maxiter=number_of_iterations, tol=1e-8)[0]
-        # corrected_Delta = minres(A=sparse_linear_operator, b=y_target, maxiter=number_of_iterations, tol=1e-8)[0]
-        # corrected_Delta = cg(A=sparse_linear_operator, b=y_target, x0=x_init, maxiter=number_of_iterations, tol=1e-8)[0]
-        # ==============================
-        #corrected_Delta_tensor = torch.from_numpy(corrected_Delta).reshape(Hin, Hout).transpose(-2,-1)
         corrected_Delta_tensor = torch.as_tensor(corrected_Delta, device=self.device, dtype=self.dtype).reshape(Hin, Hout).transpose(-2,-1)
         return corrected_Delta_tensor
 
@@ -575,13 +528,13 @@ class QNKFAC(Optimizer):
             Delta = torch.linalg.solve(left, torch.linalg.solve(right, grad).transpose(-2,-1)).transpose(-2,-1)  # (L^-1 \otimes R^-1).vec(V) = vec(R^-1.V.L^-T)
         if group['number_of_minres_it'] > 0 and self.param_groups[0]['precondition_method'] in ['KFAC', 'NKP-GT', 'NKP-QN', 'NKP-FM'] and self.param_groups[0]['quadratic_model'] in ['VMC', 'Fisher', 'QuasiHessian']:
             # Modify with Minres algo using Delta as initial guess
-            number_of_minres_it = group['number_of_minres_it'] #100  # 50
+            number_of_minres_it = group['number_of_minres_it']
             init_guess = Delta
             corrected_Delta = self.correct_Delta(module=module, target=grad, initial_guess=init_guess, number_of_iterations=number_of_minres_it)
             return self._split_for_group(module=module, g=corrected_Delta)
         elif group['number_of_minres_it'] > 0 and self.param_groups[0]['precondition_method'] in ['VMC', 'Fisher'] and self.param_groups[0]['quadratic_model'] in ['VMC', 'Fisher', 'QuasiHessian']:
             # Modify with Minres algo using previous_delta or grad as initial guess
-            number_of_minres_it = group['number_of_minres_it'] #100  # 50
+            number_of_minres_it = group['number_of_minres_it']
             scale_init_guess = 0.95
             delta_last = self._merge_for_group(module=module, input=self._get_all_momentum_buffers()[module])
             init_guess = scale_init_guess * delta_last
@@ -598,13 +551,13 @@ class QNKFAC(Optimizer):
         alpha, mu, Mdelta = self._get_optimal_alpha_mu(raw_gradients=raw_gradients,
                                                        unscaled_natural_gradients=Delta,
                                                        loss=loss)
-        delta0 = self._get_all_momentum_buffers() #could pass delta to optimal_alpha_mu to avoid calling twice?
+        delta0 = self._get_all_momentum_buffers() 
         rescaled_natural_gradients = {}
         for module in Delta:
             rescaled_natural_gradients[module] = [ alpha * Delta + mu * delta0 for Delta, delta0 in zip(Delta[module], delta0[module]) ]
         return rescaled_natural_gradients, alpha, mu, Mdelta
  
-    def _get_optimal_alpha_mu(self, raw_gradients: Tuple[Tensor], unscaled_natural_gradients: Tuple[Tensor], loss: Tensor) -> Tuple[Tensor, Tensor, Tensor]: #X, quadratic_model, loss?
+    def _get_optimal_alpha_mu(self, raw_gradients: Tuple[Tensor], unscaled_natural_gradients: Tuple[Tensor], loss: Tensor) -> Tuple[Tensor, Tensor, Tensor]: 
         delta0 = self._get_all_momentum_buffers()
         #QUADRATIC COMPONENTS
         DeltaT_M_Delta = self._get_vector_matrix_vector_product(logpsi_grads=self.per_sample_logpsi_grads, elocal_grads=self.per_sample_elocal_grads,
@@ -798,26 +751,8 @@ class QNKFAC(Optimizer):
         """
         Levenberg-Marquardt Adjustment rule: Overflow/Underflow protected version (More' 1978?)
         """
-        # TODO: Can be improved by taking into account statistical fluctuations to avoid getting stuck in local minima too long
-        # Eg: if(loss_theta_plus_delta > loss_theta + 2 * std_dev_loss):
-        #       return -math.inf
-        #     elif(torch.abs(loss_theta_plus_delta - loss_theta) < 2 * std_dev_loss (or smaller/bigger)):
-        #       return 0
-        #     else:
-        #       return "as usual"
-        # if(loss_theta_plus_delta > 1.001 * loss_theta):
-        # if(loss_theta_plus_delta > loss_theta + 1e-2):
-        # if(loss_theta_plus_delta > loss_theta):
-        # if(loss_theta_plus_delta > loss_theta + 0.04 * torch.abs(loss_theta) + 1. * loss_std):
         if(loss_theta_plus_delta > loss_theta + 0.1 * torch.abs(loss_theta)):
-            return -math.inf  #-2.386294361119891 #log(0.25) - 1
-        # elif(torch.log(torch.abs(loss_theta)) - torch.log(torch.abs(loss_theta_plus_delta)) < 1e-6):
-        # elif(torch.abs(loss_theta - loss_theta_plus_delta) < 0.001 * loss_theta):
-        # elif(torch.abs(loss_theta - loss_theta_plus_delta) < 1e-9):
-        # elif(torch.abs(loss_theta - loss_theta_plus_delta) < 0.05 * torch.abs(loss_theta) + 1. * loss_std):  # TODO split into a 3-zone (+/- std -> enlarge; [std, 2*std] -> constant; >= 2*std -> reduce)
-        # elif(loss_theta + 0.02 * torch.abs(loss_theta) + 1. * loss_std < loss_theta_plus_delta and loss_theta_plus_delta < loss_theta + 0.04 * torch.abs(loss_theta) + 1. * loss_std):
-        #     return -0.5 # default to not changing lambda
-        # elif(loss_theta < loss_theta_plus_delta and loss_theta_plus_delta < loss_theta + 0.02 * torch.abs(loss_theta) + 1. * loss_std):
+            return -math.inf  
         elif(loss_theta < loss_theta_plus_delta and loss_theta_plus_delta < loss_theta + 0.1 * torch.abs(loss_theta)):
             return 0. # default to reducing lambda
         else:
@@ -858,7 +793,6 @@ class QNKFAC(Optimizer):
 
             X (Tensor): The current many-body position vector of the hilbert space.
         """
-        # with torch.autograd.set_detect_anomaly(mode=True, check_nan=True):
         raw_gradients = self.get_all_gradients()
 
         # Update caches of per-sample gradient of log_abs_psi and of elocal (and cache elocal and energy_mean as well)
@@ -866,7 +800,6 @@ class QNKFAC(Optimizer):
         self._elocal_cache = elocal
         energy_var, energy_mean = torch.var_mean(elocal)
         energy_std = (energy_var / elocal.shape[0]).sqrt()
-        # energy_mean = torch.mean(elocal)
 
         self._update_epsilon()
 
@@ -890,7 +823,7 @@ class QNKFAC(Optimizer):
                 M_delta_scores[i] = Mdelta
             idx=M_delta_scores.argmin()
             self.param_groups[0]['gamma'] = gammas[idx]
-            delta = delta_cache[idx]  # TODO: free cached delta if you want
+            delta = delta_cache[idx] 
             self.alpha_opt = alphas[idx]
             self.mu_opt = mus[idx]
         else:
@@ -906,7 +839,7 @@ class QNKFAC(Optimizer):
             DeltaT_F_Delta = self._get_vector_matrix_vector_product(logpsi_grads=self.per_sample_logpsi_grads, elocal_grads=self.per_sample_elocal_grads,
                                                                     vector1=delta, vector2=delta, elocal=self._elocal_cache, quadratic_model='Fisher')
             deltaT_delta = self._get_scalar_product(vector1=delta, vector2=delta)
-            KL_div = DeltaT_F_Delta  + (self.param_groups[0]['damping'] + self.param_groups[0]['l2_reg']) * deltaT_delta  # TODO: check if regulator term must be included or not
+            KL_div = DeltaT_F_Delta  + (self.param_groups[0]['damping'] + self.param_groups[0]['l2_reg']) * deltaT_delta  
             self.KL_factor = min(self.param_groups[0]['kl_max'], (self.param_groups[0]['norm_constraint']/KL_div)**(0.5))  # same across groups
         else:
             self.KL_factor = None
