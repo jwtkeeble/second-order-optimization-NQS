@@ -38,13 +38,13 @@ The arguments for the `run_qnkfac.py` script are as follows:
 
 One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers of the paper via the `run_qnkfac.py` script with the corresponding flags of the table below.
 
-| Optimiser  | QM            | PM     | MR |
-|------------|---------------|--------|----|
-| KFAC       | Fisher        | KFAC   | 0  |
-| QN-KFAC    | Quasi-Hessian | KFAC   | 0  |
-| QN-MR-KFAC | Quasi-Hessian | KFAC   | >0 |
-| NGD        | Fisher        | Fisher | 0  |
-| DGD        | VMC           | VMC    | >0 |
+| Optimiser  | -QM           | -PM    | -MR |
+|------------|---------------|--------|-----|
+| KFAC       | Fisher        | KFAC   | 0   |
+| QN-KFAC    | Quasi-Hessian | KFAC   | 0   |
+| QN-MR-KFAC | Quasi-Hessian | KFAC   | >0  |
+| NGD        | Fisher        | Fisher | 0   |
+| DGD        | VMC           | VMC    | >0  |
 
 The script can be simply ran by the following command for `DGD` optimiser.
 
