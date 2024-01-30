@@ -20,27 +20,17 @@ Please **note**: this optimiser is only compatible with pytorch 2.1 and above (d
 ## Usage
 
 The arguments for the `run_qnkfac.py` script are as follows:
-    - `-N`/`--num_fermions`         : (type `int`)    Number of fermions in physical system
-    
-    - `-H`/`--num_hidden`           : (type `int`)    Number of hidden neurons per layer
-    
-    - `-L`/`--num_layers`           : (type `int`)    Number of layers within the network
-    
-    - `-D`/`--num_dets`             : (type `int`)    Number of determinants within the network's final layer
-    
-    - `-V`/`--V0`                   : (type `float`)  Interaction strength (in harmonic units)
-    
-    - `-S`/`--sigma0`               : (type `float`)  Interaction distance (in harmonic units)
-    
-    - `--preepochs`                 : (type `int`)    Number of pre-epochs for the pretraining phase
-    
-    - `--epochs`                    : (type `int`)    Number of epochs for the energy minimisation phase
-    
-    - `-QM`/`--quadratic_model`     : (type `str`)    Type of Quadratic Model
-    
-    - `-PM`/`--precondition_method` : (type `str`)    Type of Preconditioning
-    
-    - `-MR`/`--number_of_minres_it` : (type `int`)    Number of MinRes iteration
+1. `-N`/`--num_fermions`         : (type `int`)    Number of fermions in physical system
+2. `-H`/`--num_hidden`           : (type `int`)    Number of hidden neurons per layer
+3. `-L`/`--num_layers`           : (type `int`)    Number of layers within the network
+4. `-D`/`--num_dets`             : (type `int`)    Number of determinants within the network's final layer
+5. `-V`/`--V0`                   : (type `float`)  Interaction strength (in harmonic units)
+6. `-S`/`--sigma0`               : (type `float`)  Interaction distance (in harmonic units)
+7. `--preepochs`                 : (type `int`)    Number of pre-epochs for the pretraining phase
+8. `--epochs`                    : (type `int`)    Number of epochs for the energy minimisation phase
+9. `-QM`/`--quadratic_model`     : (type `str`)    Type of Quadratic Model
+10. `-PM`/`--precondition_method` : (type `str`)    Type of Preconditioning
+11. `-MR`/`--number_of_minres_it` : (type `int`)    Number of MinRes iteration
 
 ```bash
 
