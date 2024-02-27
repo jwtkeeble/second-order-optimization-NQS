@@ -13,10 +13,13 @@ class custom_function(Function):
   @staticmethod
   def forward(matrices: Tensor, log_envs: Tensor) -> Tuple[Tensor, Tensor]:
     """The forward call (or evaluation) of the custom `torch.autograd.Function` which computes a Signed-Logabs value for a LogSumExp function (with max substraction)
+    
     :param matrices: A Tensor representing the set of D matrcies from the last Equivariant Layer
     :type matrices: class: `torch.Tensor`
+    
     :param log_envs: A Tensor representing the set of D matrcies from the Log-Envelope function
     :type log_envs: class: `torch.Tensor`
+
     :return out: A Tuple containing the global sign and global logabs value of the Signed-Log Summed Determinant function
     :type out: `Tuple[torch.Tensor, torch.Tensor]`
     """

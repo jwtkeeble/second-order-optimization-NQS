@@ -10,6 +10,7 @@ class HermitePolynomialMatrix(nn.Module):
 
     def __init__(self, num_particles: int) -> None:
         r"""Constructor of class
+        
         :param nfermions: The number of fermions in the exact solution
         :type nfermions: int
 

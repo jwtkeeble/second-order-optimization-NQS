@@ -112,7 +112,7 @@ def load_model(model_path: str, device: torch.device, net: nn.Module, optim: tor
         sampler.chain_positions = state_dict['chain_positions']
         sampler.log_prob = state_dict['log_prob'] #cache log_prob too!
         sampler.sigma = state_dict['sigma'] #optimal sigma for proposal distribution!
-        print("Model resuming at epoch %6i with energy %6.4f MeV" % (start, loss))
+        print("Model resuming at epoch %6i with energy %6.4f " % (start, loss))
     else:
         print("Saving model to %s - new" % (model_path))
         start=0
@@ -136,7 +136,6 @@ def round_to_err(x, dx):
 
     # Then, return x and dx rounded to this number of dp
     return round(x, first_sf), round(dx, first_sf)
-    #x1+"("+dx1[-1]+")"
 
 
 #===#
@@ -247,27 +246,3 @@ def generate_final_energy(calc_elocal: Callable,
               'R_hat':R_hat}
 
     return _stats
-
-
-"""
-def generate_final_energy(calc_elocal: Callable,
-                          sampler: nn.Module,
-                          nbatches: int,
-                          chunk_size: int,
-                          n_sweeps: int,
-                          storage_device: torch.device):
-    
-    params = dict(sampler.network.named_parameters())
-    nwalkers = sampler.nwalkers
-    samples = torch.zeros((nbatches, nwalkers), device=storage_device)
-    sampler.target_acceptance = None # TODO: set sampler.std to be fixed
-    for batch in tqdm(range(nbatches)):
-        x, _ = sampler(n_sweeps)
-        samples[batch, :] = vmap(calc_elocal, in_dims=(None, 0), chunk_size=chunk_size)(params, x).detach_().to(storage_device)
-    mean = torch.mean(samples)
-    block_means = torch.mean(samples,dim=-1)
-    batch_var, n_batches = torch.var(block_means, dim=0), block_means.shape[0] 
-
-    error_of_mean = torch.sqrt(batch_var / n_batches)
-    return mean, error_of_mean
-"""

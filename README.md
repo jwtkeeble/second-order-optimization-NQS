@@ -1,6 +1,6 @@
 # Second-Order Optimization NQS
 
-This repository contains the associated code for '[Second-order Optimisation strategies for neural network quantum states]()', and focuses on second-order based optimisation schemes applied towards neural-network quantum states (NQS) for Variational Monte Carlo (VMC) calculations.
+This repository contains the associated code for '[Second-order Optimisation strategies for neural network quantum states](https://arxiv.org/abs/2401.17550)', and focuses on second-order based optimisation schemes applied towards neural-network quantum states (NQS) for Variational Monte Carlo (VMC) calculations.
 
 This work focuses on expanding upon our previous work of '[Machine learning one-dimensional spinless trapped fermionic systems with neural-network quantum states](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.108.063320)' by focusing on novel second-order optimisation schemes for NQSs, rather than modifying the NQS itself.
 
@@ -12,17 +12,17 @@ You can reproduce the results of the paper by cloning the repository with,
 
 `git clone https://github.com/jwtkeeble/second-order-optimization-NQS.git`
 
-and running the `run_qnkfac.py` script as shown below in the [Usage](#usage) section to benchmark the variety of optimisers stated within the paper.
+and running the `run_second_order_opt.py` script as shown below in the [Usage](#usage) section to benchmark the variety of optimisers stated within the paper.
 
 ## Requirements
 
 The requirements in order to run this script can be found in `requirements.txt` and can be installed via `pip` or `conda`.
 
-**Please note**: this optimiser is only compatible with pytorch 2.1 and above (due to reliance on the `torch.func` namespace for efficiently computing per-sample gradients).
+**note** This package requires torch2.1+ in order to use the `torch.func` namespace to efficiently compute per-sample gradients.
 
 ## Usage
 
-The arguments for the `run_qnkfac.py` script are as follows:
+The arguments for the `run_second_order_opt.py` script are as follows:
 
 | Argument                      | Type    | Default      | Description                                               |
 |-------------------------------|---------|--------------|-----------------------------------------------------------|
@@ -36,10 +36,10 @@ The arguments for the `run_qnkfac.py` script are as follows:
 | `--epochs`                    | `int`   | 1000         | Number of epochs for the energy minimisation phase        |
 | `-QM`/`--quadratic_model`     | `str`   | QuasiHessian | Type of Quadratic Model ['Fisher', 'QuasiHessian', 'VMC'] |
 | `-PM`/`--precondition_method` | `str`   | KFAC         | Type of Preconditioning ['KFAC', 'Fisher', 'VMC']         |
-| `-MR`/`--number_of_minres_it` | `int`   | 50           | Number of MinRes iteration                                |
+| `-MR`/`--number_of_minres_it` | `int`   | 50           | Number of maximum MinRes iteration                        |
 
 
-One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers of the paper via the `run_qnkfac.py` script with the corresponding flags of the table below.
+One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers of the paper via the `run_second_order_opt.py` script with the corresponding flags of the table below.
 
 | Optimiser  | -QM           | -PM    | -MR |
 |------------|---------------|--------|-----|
@@ -49,22 +49,29 @@ One can run the KFAC, QN-KFAC, QN-MR-KFAC, NGD, and DGD optimisers of the paper 
 | NGD        | Fisher        | Fisher | 0   |
 | DGD        | VMC           | VMC    | > 0 |
 
-For example, running the DGD MR=50 optimiser can be ran via the following command,
+For example, running the DGD MR=50 optimiser for a NQS with 64 hidden nodes, 2 layers, and a single determinant can be ran via the following command,
 
 ```bash
 
-python run_qnkfac.py -N 2 -H 64 -L 2 -D 1 -V -20 -S 0.5 -QM VMC -PM VMC -MR 50
+python run_second_order_opt.py -N 2 -H 64 -L 2 -D 1 -V -20 -S 0.5 -QM VMC -PM VMC -MR 50
 
 ```
 
-The results of this simulation are stored within the `results/` directory for both pretraining (`results/pretrain/`) and the energy minimisation (`results/energy/`). Within each of these directories there exists a `data/` and `checkpoints/`, which stores the convergence data and the final variational state (as well as sampler state) respectively. 
+## Results
 
-The convergence data is stored as a `.csv` file, which can be easily manipulated by the `Pandas` library for data analysis and visualisation. 
+The results of this simulation are stored within the `results/` directory for both pretraining (`results/pretrain/`) and the energy minimisation (`results/energy/`). Within each of these directories there exists a `data/` and `checkpoints/` directory, which stores the convergence data and the final variational state (as well as sampler state) respectively. 
 
-The variational state is stored as a `.pt` file, following PyTorch convention, and stores the final NQS state as well as its MCMC sampler state.
+1. The convergence data is stored as a `.csv` file, which can be easily manipulated by the `Pandas` library for data analysis and visualisation. 
 
-**NOTE**: The current state of the optimiser only supports NQSs that are comprised of `nn.Linear` objects and will silently skip over other layer types.
-However, one can extend the optimiser to support other layer types by extending the `_merge_for_group` and `_split_for_group` methods, which merge/split all parameters of an `nn.Module` into a single Tensor, respectively, and define how to regularise the Kronecker factors (including the `pi` constant) in the `_regularise_all_kronecker_factors` method.
+2. The variational state is stored as a `.pt` file, following PyTorch convention, and stores the final NQS state as well as its MCMC sampler state.
+
+## Warnings
+
+**PyTorch Version**: This optimiser is only compatible with **PyTorch 2.1+** (due to the `torch.func` namespace for efficiently computing per-sample gradients).
+
+**Layers**: The current state of the optimiser only supports NQSs that are comprised of `nn.Linear` objects and will silently skip over other layer types.
+
+However, you can extend the optimiser to support other layer types by including definitions for 'merging'/'spliting' layer weights and how to perform the KFAC approximation. 
 
 ## License 
 

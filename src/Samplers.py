@@ -10,12 +10,11 @@ from torch import Tensor
 from Models import vLogHarmonicNet
 
 def rw_metropolis_kernel(logpdf: Callable, position: Tensor, log_prob: Tensor, sigma: float):
-    delta_position = sigma * torch.randn_like(position)#.shape, device=position.device)
+    delta_position = sigma * torch.randn_like(position)
     proposal = position + delta_position
-    #print(position.dtype, delta_position.dtype, proposal.dtype)
     proposal_logprob = logpdf(proposal)
 
-    log_uniform = torch.log(torch.rand_like(proposal_logprob))#.shape, device=position.device))
+    log_uniform = torch.log(torch.rand_like(proposal_logprob))
     accept = log_uniform < (proposal_logprob - log_prob)
     
     acceptance_rate = accept.float().mean()
@@ -41,7 +40,6 @@ class MetropolisHastings(nn.Module):
                                   device=self.device,
                                   dtype=self.dtype,
                                   requires_grad=False)  # isotropic initialisation.
-        #print("chain_positions: ",self.chain_positions.dtype)
         _pretrain = self.network.pretrain
         self.network.pretrain = False
         self.log_prob = self.network(self.chain_positions)[1].mul(2)

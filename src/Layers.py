@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import math
-import sys
 
 from torch import Tensor
 from typing import Tuple
@@ -43,6 +41,7 @@ class EquivariantLayer(nn.Module):
     
   def forward(self, h: Tensor) -> Tensor:
     """The call method of the layer 
+
     :param h: Input tensor containing the propagated features from the previous layer
     :type h: class: `torch.Tensor`
         
