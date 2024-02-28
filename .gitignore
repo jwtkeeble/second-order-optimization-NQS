@@ -6,3 +6,5 @@
 *.npz
 docs/
 analysis/
+sandbox/
+results/

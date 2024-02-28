@@ -18,7 +18,7 @@ and running the `run_second_order_opt.py` script as shown below in the [Usage](#
 
 The requirements in order to run this script can be found in `requirements.txt` and can be installed via `pip` or `conda`.
 
-**note** This package requires torch2.1+ in order to use the `torch.func` namespace to efficiently compute per-sample gradients.
+**Note:** This package requires torch2.1+ in order to use the `torch.func` namespace to efficiently compute per-sample gradients.
 
 ## Usage
 

@@ -8,7 +8,7 @@ from Layers import EquivariantLayer, SlaterMultiDet, LogEnvelope, MatrixToSLogDe
 
 class vLogHarmonicNet(nn.Module):
 
-    def __init__(self, num_input: int, num_hidden: int, num_layers: int, num_dets: int, func: nn.Module, pretrain: bool):
+    def __init__(self, num_input: int, num_hidden: int, num_layers: int, num_dets: int, act_func: nn.Module, pretrain: bool):
         """Permutational Equivariant Neural Network which takes the one-dimensional positions
         of the system (represented by a matrix of [A,1]) and returns the log. abs. determinant
         (and its sign) of D Generalised Slater Matrices which are subsequently merged together
@@ -44,7 +44,7 @@ class vLogHarmonicNet(nn.Module):
         self.num_hidden=num_hidden
         self.num_layers=num_layers
         self.num_dets=num_dets
-        self.func=func #TODO rename it to specify activation function
+        self.act_func=act_func #TODO rename it to specify activation function
         self.pretrain=pretrain
         
         layers = []
@@ -86,9 +86,9 @@ class vLogHarmonicNet(nn.Module):
 
         """
         h = x0.unsqueeze(-1)              # add feature dim (1d-systems only)
-        h = self.func(self.layers[0](h))  # First equivariant layer 
+        h = self.act_func(self.layers[0](h))  # First equivariant layer 
         for l in self.layers[1:-1]:       # Additional equivariant layers (with residual connections)
-            h = self.func(l(h)) + h
+            h = self.act_func(l(h)) + h
         matrices = self.layers[-1](h)     # Final linear layer
         
         log_envs = self.log_envelope(x0)  # log-envelopes 
