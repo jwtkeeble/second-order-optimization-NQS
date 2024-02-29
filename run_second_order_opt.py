@@ -109,7 +109,7 @@ if(__name__ == '__main__'):
                     V0=V0,
                     s=sigma0,
                     device=torch.device('cpu'),
-                    itermax=10)#_000)
+                    itermax=10_000)
         enerhf, enerhfp, ekin0hf, eho, epot0hf, esum0hf = HF()  # run Hartree-Fock
     else:
         enerhf=torch.Tensor([groundstate_energy])
